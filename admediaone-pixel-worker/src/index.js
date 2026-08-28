@@ -6,6 +6,17 @@ export default {
     if (url.pathname === "/collect") {
 
       const cf = request.cf || {};
+      const ua = request.headers.get("User-Agent") || "";
+
+      let deviceType = "Desktop";
+
+      if (/mobile/i.test(ua)) {
+        deviceType = "Mobile";
+      }
+
+      if (/tablet|ipad/i.test(ua)) {
+        deviceType = "Tablet";
+      }
 
       const payload = {
         event: "PageView",
@@ -18,8 +29,7 @@ export default {
         referrer:
           request.headers.get("Referer") || "",
 
-        user_agent:
-          request.headers.get("User-Agent") || "",
+        user_agent: ua,
 
         ip_address:
           request.headers.get("CF-Connecting-IP") || "",
@@ -33,8 +43,7 @@ export default {
         city:
           cf.city || "",
 
-        device_type:
-          cf.deviceType || "",
+        device_type: deviceType,
 
         custom_metadata: {
           colo: cf.colo,
@@ -49,8 +58,7 @@ export default {
           method: "POST",
           headers: {
             apikey: env.SUPABASE_API_KEY,
-            Authorization:
-              `Bearer ${env.SUPABASE_API_KEY}`,
+            Authorization: `Bearer ${env.SUPABASE_API_KEY}`,
             "Content-Type": "application/json",
             Prefer: "return=minimal"
           },
