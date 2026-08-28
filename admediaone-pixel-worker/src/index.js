@@ -33,9 +33,10 @@ export default {
       });
     }
 
-    return Response.json({
-      worker: "admediaone-pixel",
-      status: "running"
-    });
+return Response.json({
+  worker: "admediaone-pixel",
+  status: "running",
+  version: "git-test-v1"
+});
   }
 };
