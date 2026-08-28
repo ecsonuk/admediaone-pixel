@@ -110,7 +110,7 @@ export default {
           headers: {
             apikey: env.SUPABASE_API_KEY,
             Authorization:
-              \`Bearer \${env.SUPABASE_API_KEY}\`,
+              `Bearer \${env.SUPABASE_API_KEY}`,
             "Content-Type": "application/json",
             Prefer: "return=minimal"
           },
