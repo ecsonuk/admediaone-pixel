@@ -21,6 +21,12 @@ export default {
       const payload = {
         event: "PageView",
 
+session_id:
+  url.searchParams.get("session_id") || null,
+
+visitor_id:
+  url.searchParams.get("visitor_id") || null,
+
         time_stamp: new Date().toISOString(),
 
         page_url:
