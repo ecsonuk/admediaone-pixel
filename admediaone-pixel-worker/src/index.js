@@ -207,9 +207,6 @@ const visitCount =
 const pageTitle =
   url.searchParams.get("page_title");
 
-const pageTitle =
-  url.searchParams.get("page_title");
-
       const userAgent =
         request.headers.get("User-Agent") || "";
 
