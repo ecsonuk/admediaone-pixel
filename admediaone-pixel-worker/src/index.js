@@ -1,15 +1,15 @@
 export default {
   async fetch(request, env) {
 
-if (request.method === "OPTIONS") {
-  return new Response(null, {
-    headers: {
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-      "Access-Control-Allow-Headers": "*"
+    if (request.method === "OPTIONS") {
+      return new Response(null, {
+        headers: {
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+          "Access-Control-Allow-Headers": "*"
+        }
+      });
     }
-  });
-}
 
     const url = new URL(request.url);
 
@@ -20,6 +20,13 @@ if (request.method === "OPTIONS") {
 
       const js = `
 (function() {
+
+  // Prevent duplicate execution
+  if (window.__ADMO_PIXEL_LOADED__) {
+    return;
+  }
+
+  window.__ADMO_PIXEL_LOADED__ = true;
 
   let visitorId = localStorage.getItem("admo_visitor");
 
@@ -42,7 +49,9 @@ if (request.method === "OPTIONS") {
     "${url.origin}/collect" +
     "?visitor_id=" + encodeURIComponent(visitorId) +
     "&session_id=" + encodeURIComponent(sessionId) +
-    "&screen_resolution=" + encodeURIComponent(screenResolution);
+    "&screen_resolution=" + encodeURIComponent(screenResolution) +
+    "&page_url=" + encodeURIComponent(window.location.href) +
+    "&referrer=" + encodeURIComponent(document.referrer || "");
 
   fetch(collectUrl, {
     method: "GET",
@@ -74,6 +83,12 @@ if (request.method === "OPTIONS") {
       const screenResolution =
         url.searchParams.get("screen_resolution");
 
+      const pageUrl =
+        url.searchParams.get("page_url");
+
+      const referrer =
+        url.searchParams.get("referrer");
+
       const userAgent =
         request.headers.get("User-Agent") || "";
 
@@ -87,11 +102,9 @@ if (request.method === "OPTIONS") {
 
         screen_resolution: screenResolution,
 
-        page_url:
-          request.headers.get("Referer") || "",
+        page_url: pageUrl || "",
 
-        referrer:
-          request.headers.get("Referer") || "",
+        referrer: referrer || "",
 
         user_agent: userAgent,
 
@@ -128,25 +141,25 @@ if (request.method === "OPTIONS") {
         }
       );
 
-        return new Response(
-          JSON.stringify({
-            success: response.ok,
-            status: response.status
-          }),
-          {
-            headers: {
-              "Content-Type": "application/json",
-              "Access-Control-Allow-Origin": "*",
-              "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-              "Access-Control-Allow-Headers": "*"
-            }
+      return new Response(
+        JSON.stringify({
+          success: response.ok,
+          status: response.status
+        }),
+        {
+          headers: {
+            "Content-Type": "application/json",
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+            "Access-Control-Allow-Headers": "*"
           }
-        );
-      }
-
-      return Response.json({
-        worker: "admediaone-pixel",
-        status: "running"
-      });
+        }
+      );
     }
+
+    return Response.json({
+      worker: "admediaone-pixel",
+      status: "running"
+    });
+  }
 };
