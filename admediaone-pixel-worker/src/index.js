@@ -1,6 +1,16 @@
 export default {
   async fetch(request, env) {
 
+if (request.method === "OPTIONS") {
+  return new Response(null, {
+    headers: {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+      "Access-Control-Allow-Headers": "*"
+    }
+  });
+}
+
     const url = new URL(request.url);
 
     /*
@@ -118,11 +128,20 @@ export default {
         }
       );
 
-      return Response.json({
-        success: response.ok,
-        status: response.status
-      });
+return new Response(
+  JSON.stringify({
+    success: response.ok,
+    status: response.status
+  }),
+  {
+    headers: {
+      "Content-Type": "application/json",
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+      "Access-Control-Allow-Headers": "*"
     }
+  }
+);
 
     return Response.json({
       worker: "admediaone-pixel",
