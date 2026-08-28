@@ -13,6 +13,58 @@ export default {
 
     const url = new URL(request.url);
 
+function detectBrowser(ua) {
+
+  if (ua.includes("Chrome")) {
+    const m = ua.match(/Chrome\/([0-9.]+)/);
+    return {
+      name: "Chrome",
+      version: m ? m[1] : null
+    };
+  }
+
+  if (ua.includes("Firefox")) {
+    const m = ua.match(/Firefox\/([0-9.]+)/);
+    return {
+      name: "Firefox",
+      version: m ? m[1] : null
+    };
+  }
+
+  if (ua.includes("Safari") && !ua.includes("Chrome")) {
+    const m = ua.match(/Version\/([0-9.]+)/);
+    return {
+      name: "Safari",
+      version: m ? m[1] : null
+    };
+  }
+
+  return {
+    name: "Unknown",
+    version: null
+  };
+}
+
+function detectOS(ua) {
+
+  if (ua.includes("Windows"))
+    return "Windows";
+
+  if (ua.includes("Android"))
+    return "Android";
+
+  if (ua.includes("iPhone"))
+    return "iOS";
+
+  if (ua.includes("Mac"))
+    return "macOS";
+
+  if (ua.includes("Linux"))
+    return "Linux";
+
+  return "Unknown";
+}
+
     /*
      * Pixel JS
      */
@@ -45,13 +97,31 @@ export default {
   const screenResolution =
     window.screen.width + "x" + window.screen.height;
 
-  const collectUrl =
-    "${url.origin}/collect" +
-    "?visitor_id=" + encodeURIComponent(visitorId) +
-    "&session_id=" + encodeURIComponent(sessionId) +
-    "&screen_resolution=" + encodeURIComponent(screenResolution) +
-    "&page_url=" + encodeURIComponent(window.location.href) +
-    "&referrer=" + encodeURIComponent(document.referrer || "");
+const language = navigator.language || "";
+
+const timezone =
+  Intl.DateTimeFormat().resolvedOptions().timeZone || "";
+
+const platform =
+  navigator.platform || "";
+
+const userAgent =
+  navigator.userAgent || "";
+
+const pageTitle =
+  document.title || "";
+
+const collectUrl =
+  "${url.origin}/collect" +
+  "?visitor_id=" + encodeURIComponent(visitorId) +
+  "&session_id=" + encodeURIComponent(sessionId) +
+  "&screen_resolution=" + encodeURIComponent(screenResolution) +
+  "&page_url=" + encodeURIComponent(window.location.href) +
+  "&referrer=" + encodeURIComponent(document.referrer || "") +
+  "&language=" + encodeURIComponent(language) +
+  "&timezone=" + encodeURIComponent(timezone) +
+  "&platform=" + encodeURIComponent(platform) +
+  "&page_title=" + encodeURIComponent(pageTitle);
 
   fetch(collectUrl, {
     method: "GET",
@@ -89,42 +159,83 @@ export default {
       const referrer =
         url.searchParams.get("referrer");
 
+const language =
+  url.searchParams.get("language");
+
+const timezone =
+  url.searchParams.get("timezone");
+
+const platform =
+  url.searchParams.get("platform");
+
+const pageTitle =
+  url.searchParams.get("page_title");
+
       const userAgent =
         request.headers.get("User-Agent") || "";
 
-      const payload = {
+const browser =
+  detectBrowser(userAgent);
 
-        event: "PageView",
+const osName =
+  detectOS(userAgent);
 
-        visitor_id: visitorId,
+const payload = {
 
-        session_id: sessionId,
+  event: "PageView",
 
-        screen_resolution: screenResolution,
+  visitor_id: visitorId,
 
-        page_url: pageUrl || "",
+  session_id: sessionId,
 
-        referrer: referrer || "",
+  screen_resolution: screenResolution,
 
-        user_agent: userAgent,
+  page_url: pageUrl || "",
 
-        device_type:
-          /mobile/i.test(userAgent)
-            ? "Mobile"
-            : "Desktop",
+  referrer: referrer || "",
 
-        country:
-          request.cf?.country || null,
+  user_agent: userAgent,
 
-        region:
-          request.cf?.region || null,
+  device_type:
+    /mobile/i.test(userAgent)
+      ? "Mobile"
+      : "Desktop",
 
-        city:
-          request.cf?.city || null,
+  browser_name:
+    browser.name,
 
-        time_stamp:
-          new Date().toISOString()
-      };
+  browser_version:
+    browser.version,
+
+  os_name:
+    osName,
+
+  os_version:
+    null,
+
+  device_info: {
+    language: language,
+    timezone: timezone,
+    platform: platform
+  },
+
+custom_metadata: {
+  page_title:
+    pageTitle
+},
+
+  country:
+    request.cf?.country || null,
+
+  region:
+    request.cf?.region || null,
+
+  city:
+    request.cf?.city || null,
+
+  time_stamp:
+    new Date().toISOString()
+};
 
       const response = await fetch(
         `${env.SUPABASE_URL}/events`,
