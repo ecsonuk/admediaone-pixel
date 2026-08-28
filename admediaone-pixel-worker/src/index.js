@@ -136,6 +136,18 @@ const userAgent =
 const pageTitle =
   document.title || "";
 
+const currentUrl =
+  new URL(window.location.href);
+
+const utmSource =
+  currentUrl.searchParams.get("utm_source");
+
+const utmMedium =
+  currentUrl.searchParams.get("utm_medium");
+
+const utmCampaign =
+  currentUrl.searchParams.get("utm_campaign");
+
 const collectUrl =
   "${url.origin}/collect" +
   "?visitor_id=" + encodeURIComponent(visitorId) +
@@ -148,8 +160,10 @@ const collectUrl =
 "&platform=" + encodeURIComponent(platform) +
 "&retarget_id=" + encodeURIComponent(retargetId) +
 "&visit_count=" + encodeURIComponent(visitCount) +
-"&page_title=" + encodeURIComponent(document.title || "");
-  "&page_title=" + encodeURIComponent(pageTitle);
+"&page_title=" + encodeURIComponent(pageTitle) +
+"&utm_source=" + encodeURIComponent(utmSource || "") +
+"&utm_medium=" + encodeURIComponent(utmMedium || "") +
+"&utm_campaign=" + encodeURIComponent(utmCampaign || "");
 
   fetch(collectUrl, {
     method: "GET",
@@ -207,6 +221,15 @@ const visitCount =
 const pageTitle =
   url.searchParams.get("page_title");
 
+const utmSource =
+  url.searchParams.get("utm_source");
+
+const utmMedium =
+  url.searchParams.get("utm_medium");
+
+const utmCampaign =
+  url.searchParams.get("utm_campaign");
+
       const userAgent =
         request.headers.get("User-Agent") || "";
 
@@ -259,13 +282,15 @@ const payload = {
   os_name:
     osName,
 
-  custom_metadata: {
-    campaign_id: null,
-    retarget_id: retargetId,
-    visit_count: visitCount,
-    screen_resolution: screenResolution,
-    page_title: pageTitle
-  },
+custom_metadata: {
+  campaign_id: utmCampaign || null,
+  utm_source: utmSource || null,
+  utm_medium: utmMedium || null,
+  retarget_id: retargetId,
+  visit_count: visitCount,
+  screen_resolution: screenResolution,
+  page_title: pageTitle
+},
 
   device_info: {
     device_type:
