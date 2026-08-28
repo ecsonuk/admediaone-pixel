@@ -80,6 +80,31 @@ function detectOS(ua) {
 
   window.__ADMO_PIXEL_LOADED__ = true;
 
+let retargetId =
+  localStorage.getItem("admo_retarget");
+
+if (!retargetId) {
+  retargetId =
+    crypto.randomUUID().replace(/-/g, "");
+
+  localStorage.setItem(
+    "admo_retarget",
+    retargetId
+  );
+}
+
+let visitCount =
+  parseInt(
+    localStorage.getItem("admo_visit_count") || "0"
+  );
+
+visitCount++;
+
+localStorage.setItem(
+  "admo_visit_count",
+  visitCount
+);
+
   let visitorId = localStorage.getItem("admo_visitor");
 
   if (!visitorId) {
@@ -120,7 +145,10 @@ const collectUrl =
   "&referrer=" + encodeURIComponent(document.referrer || "") +
   "&language=" + encodeURIComponent(language) +
   "&timezone=" + encodeURIComponent(timezone) +
-  "&platform=" + encodeURIComponent(platform) +
+"&platform=" + encodeURIComponent(platform) +
+"&retarget_id=" + encodeURIComponent(retargetId) +
+"&visit_count=" + encodeURIComponent(visitCount) +
+"&page_title=" + encodeURIComponent(document.title || "");
   "&page_title=" + encodeURIComponent(pageTitle);
 
   fetch(collectUrl, {
@@ -168,6 +196,17 @@ const timezone =
 const platform =
   url.searchParams.get("platform");
 
+const retargetId =
+  url.searchParams.get("retarget_id");
+
+const visitCount =
+  parseInt(
+    url.searchParams.get("visit_count") || "1"
+  );
+
+const pageTitle =
+  url.searchParams.get("page_title");
+
 const pageTitle =
   url.searchParams.get("page_title");
 
@@ -182,11 +221,15 @@ const osName =
 
 const payload = {
 
-  event: "PageView",
+  event: "bootstrap",
 
   visitor_id: visitorId,
 
   session_id: sessionId,
+
+  custom_id: "default",
+
+  retarget_id: retargetId,
 
   screen_resolution: screenResolution,
 
@@ -201,6 +244,15 @@ const payload = {
       ? "Mobile"
       : "Desktop",
 
+  country:
+    request.cf?.country || null,
+
+  region:
+    request.cf?.region || null,
+
+  city:
+    request.cf?.city || null,
+
   browser_name:
     browser.name,
 
@@ -210,28 +262,32 @@ const payload = {
   os_name:
     osName,
 
-  os_version:
-    null,
-
-  device_info: {
-    language: language,
-    timezone: timezone,
-    platform: platform
+  custom_metadata: {
+    campaign_id: null,
+    retarget_id: retargetId,
+    visit_count: visitCount,
+    screen_resolution: screenResolution,
+    page_title: pageTitle
   },
 
-custom_metadata: {
-  page_title:
-    pageTitle
-},
+  device_info: {
+    device_type:
+      /mobile/i.test(userAgent)
+        ? "Mobile"
+        : "Desktop",
 
-  country:
-    request.cf?.country || null,
+    screen_resolution:
+      screenResolution,
 
-  region:
-    request.cf?.region || null,
+    language:
+      language,
 
-  city:
-    request.cf?.city || null,
+    platform:
+      platform,
+
+    timezone:
+      timezone
+  },
 
   time_stamp:
     new Date().toISOString()
