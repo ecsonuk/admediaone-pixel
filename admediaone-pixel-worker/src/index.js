@@ -19,15 +19,20 @@ export default {
       }
 
       const payload = {
+
         event: "PageView",
 
-session_id:
-  url.searchParams.get("session_id") || null,
+        session_id:
+          url.searchParams.get("session_id") || null,
 
-visitor_id:
-  url.searchParams.get("visitor_id") || null,
+        visitor_id:
+          url.searchParams.get("visitor_id") || null,
 
-        time_stamp: new Date().toISOString(),
+        screen_resolution:
+          url.searchParams.get("screen_resolution") || null,
+
+        time_stamp:
+          new Date().toISOString(),
 
         page_url:
           request.headers.get("Referer") || "",
@@ -35,7 +40,8 @@ visitor_id:
         referrer:
           request.headers.get("Referer") || "",
 
-        user_agent: ua,
+        user_agent:
+          ua,
 
         ip_address:
           request.headers.get("CF-Connecting-IP") || "",
@@ -49,12 +55,13 @@ visitor_id:
         city:
           cf.city || "",
 
-        device_type: deviceType,
+        device_type:
+          deviceType,
 
         custom_metadata: {
-          colo: cf.colo,
-          timezone: cf.timezone,
-          continent: cf.continent
+          colo: cf.colo || "",
+          timezone: cf.timezone || "",
+          continent: cf.continent || ""
         }
       };
 
@@ -63,10 +70,10 @@ visitor_id:
         {
           method: "POST",
           headers: {
-            apikey: env.SUPABASE_API_KEY,
-            Authorization: `Bearer ${env.SUPABASE_API_KEY}`,
+            "apikey": env.SUPABASE_API_KEY,
+            "Authorization": `Bearer ${env.SUPABASE_API_KEY}`,
             "Content-Type": "application/json",
-            Prefer: "return=minimal"
+            "Prefer": "return=minimal"
           },
           body: JSON.stringify(payload)
         }
@@ -80,7 +87,8 @@ visitor_id:
 
     return Response.json({
       worker: "admediaone-pixel",
-      status: "running"
+      status: "running",
+      timestamp: new Date().toISOString()
     });
   }
 };
