@@ -1,38 +1,39 @@
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
 
     const url = new URL(request.url);
 
     if (url.pathname === "/collect") {
 
-      const cf = request.cf || {};
-      const ua = request.headers.get("User-Agent") || "";
+      const visitorId =
+        url.searchParams.get("visitor_id") ||
+        request.headers.get("X-Visitor-Id") ||
+        null;
 
-      let deviceType = "Desktop";
+      const sessionId =
+        url.searchParams.get("session_id") ||
+        request.headers.get("X-Session-Id") ||
+        null;
 
-      if (/mobile/i.test(ua)) {
-        deviceType = "Mobile";
-      }
+      const screenResolution =
+        url.searchParams.get("screen_resolution") ||
+        request.headers.get("X-Screen-Resolution") ||
+        null;
 
-      if (/tablet|ipad/i.test(ua)) {
-        deviceType = "Tablet";
-      }
+      const userAgent =
+        request.headers.get("User-Agent") || "";
+
+      const country =
+        request.cf?.country || null;
+
+      const region =
+        request.cf?.region || null;
+
+      const city =
+        request.cf?.city || null;
 
       const payload = {
-
         event: "PageView",
-
-        session_id:
-          url.searchParams.get("session_id") || null,
-
-        visitor_id:
-          url.searchParams.get("visitor_id") || null,
-
-        screen_resolution:
-          url.searchParams.get("screen_resolution") || null,
-
-        time_stamp:
-          new Date().toISOString(),
 
         page_url:
           request.headers.get("Referer") || "",
@@ -40,29 +41,25 @@ export default {
         referrer:
           request.headers.get("Referer") || "",
 
-        user_agent:
-          ua,
+        user_agent: userAgent,
 
-        ip_address:
-          request.headers.get("CF-Connecting-IP") || "",
+        visitor_id: visitorId,
 
-        country:
-          cf.country || "",
+        session_id: sessionId,
 
-        region:
-          cf.region || "",
-
-        city:
-          cf.city || "",
+        screen_resolution: screenResolution,
 
         device_type:
-          deviceType,
+          /mobile/i.test(userAgent)
+            ? "Mobile"
+            : "Desktop",
 
-        custom_metadata: {
-          colo: cf.colo || "",
-          timezone: cf.timezone || "",
-          continent: cf.continent || ""
-        }
+        country,
+        region,
+        city,
+
+        time_stamp:
+          new Date().toISOString()
       };
 
       const response = await fetch(
@@ -70,10 +67,10 @@ export default {
         {
           method: "POST",
           headers: {
-            "apikey": env.SUPABASE_API_KEY,
-            "Authorization": `Bearer ${env.SUPABASE_API_KEY}`,
+            apikey: env.SUPABASE_API_KEY,
+            Authorization: `Bearer ${env.SUPABASE_API_KEY}`,
             "Content-Type": "application/json",
-            "Prefer": "return=minimal"
+            Prefer: "return=minimal"
           },
           body: JSON.stringify(payload)
         }
@@ -81,14 +78,15 @@ export default {
 
       return Response.json({
         success: response.ok,
-        status: response.status
+        status: response.status,
+        country,
+        city
       });
     }
 
     return Response.json({
       worker: "admediaone-pixel",
-      status: "running",
-      timestamp: new Date().toISOString()
+      status: "running"
     });
   }
 };
