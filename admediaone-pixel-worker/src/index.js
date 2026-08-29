@@ -98,7 +98,6 @@ async function getCampaign(env, hostname) {
 
 const hostname =
   url.searchParams.get("domain");
-
 const campaign =
   await getCampaign(env, hostname);
 
@@ -114,7 +113,6 @@ const campaign =
 
 const campaignEnabled =
   ${campaign ? "true" : "false"};
-
 const adUrl =
   "${campaign?.ad_url || ""}";
 
@@ -161,28 +159,20 @@ localStorage.setItem(
     window.screen.width + "x" + window.screen.height;
 
 const language = navigator.language || "";
-
 const timezone =
   Intl.DateTimeFormat().resolvedOptions().timeZone || "";
-
 const platform =
   navigator.platform || "";
-
 const userAgent =
   navigator.userAgent || "";
-
 const pageTitle =
   document.title || "";
-
 const currentUrl =
   new URL(window.location.href);
-
 const utmSource =
   currentUrl.searchParams.get("utm_source");
-
 const utmMedium =
   currentUrl.searchParams.get("utm_medium");
-
 const utmCampaign =
   currentUrl.searchParams.get("utm_campaign");
 
@@ -226,31 +216,23 @@ const collectUrl =
 
       const visitorId =
         url.searchParams.get("visitor_id");
-
       const sessionId =
         url.searchParams.get("session_id");
-
       const screenResolution =
         url.searchParams.get("screen_resolution");
-
       const pageUrl =
         url.searchParams.get("page_url");
-
       const referrer =
         url.searchParams.get("referrer");
 
 const language =
   url.searchParams.get("language");
-
 const timezone =
   url.searchParams.get("timezone");
-
 const platform =
   url.searchParams.get("platform");
-
 const retargetId =
   url.searchParams.get("retarget_id");
-
 const visitCount =
   parseInt(
     url.searchParams.get("visit_count") || "1"
@@ -258,65 +240,45 @@ const visitCount =
 
 const pageTitle =
   url.searchParams.get("page_title");
-
 const utmSource =
   url.searchParams.get("utm_source");
-
 const utmMedium =
   url.searchParams.get("utm_medium");
-
 const utmCampaign =
   url.searchParams.get("utm_campaign");
-
-      const userAgent =
-        request.headers.get("User-Agent") || "";
+const userAgent =
+  request.headers.get("User-Agent") || "";
 
 const browser =
   detectBrowser(userAgent);
-
 const osName =
   detectOS(userAgent);
 
 const payload = {
 
   event: "bootstrap",
-
   visitor_id: visitorId,
-
   session_id: sessionId,
-
   custom_id: "default",
-
   retarget_id: retargetId,
-
   screen_resolution: screenResolution,
-
   page_url: pageUrl || "",
-
   referrer: referrer || "",
-
   user_agent: userAgent,
-
   device_type:
     /mobile/i.test(userAgent)
       ? "Mobile"
       : "Desktop",
-
   country:
     request.cf?.country || null,
-
   region:
     request.cf?.region || null,
-
   city:
     request.cf?.city || null,
-
   browser_name:
     browser.name,
-
   browser_version:
     browser.version,
-
   os_name:
     osName,
 
