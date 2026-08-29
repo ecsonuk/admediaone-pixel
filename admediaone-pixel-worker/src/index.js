@@ -246,6 +246,8 @@ if (!document.getElementById("admo-retarget-frame")) {
   );
 }
 
+}   // <-- closes campaignEnabled block
+
 })();
 `;
 
