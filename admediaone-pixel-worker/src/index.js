@@ -115,12 +115,15 @@ const campaign =
       const js = `
 (function() {
 
-  // Prevent duplicate execution
-  if (window.__ADMO_PIXEL_LOADED__) {
-    return;
-  }
+if (window.self !== window.top) {
+  return;
+}
 
-  window.__ADMO_PIXEL_LOADED__ = true;
+if (window.__ADMO_PIXEL_LOADED__) {
+  return;
+}
+
+window.__ADMO_PIXEL_LOADED__ = true;
 
 const campaignEnabled =
   ${campaign ? "true" : "false"};
