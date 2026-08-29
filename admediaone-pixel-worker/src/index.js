@@ -96,10 +96,21 @@ async function getCampaign(env, hostname) {
 
     if (url.pathname === "/pixel.js") {
 
+const referer =
+  request.headers.get("Referer") || "";
+
 const hostname =
-  url.searchParams.get("domain");
+  referer
+    ? new URL(referer).hostname
+    : "";
+
+const refererFallbackNeeded =
+  !hostname;
+
 const campaign =
-  await getCampaign(env, hostname);
+  hostname
+    ? await getCampaign(env, hostname)
+    : null;
 
       const js = `
 (function() {
@@ -113,8 +124,12 @@ const campaign =
 
 const campaignEnabled =
   ${campaign ? "true" : "false"};
+
 const adUrl =
   "${campaign?.ad_url || ""}";
+
+const refererFallbackNeeded =
+  ${refererFallbackNeeded ? "true" : "false"};
 
 let retargetId =
   localStorage.getItem("admo_retarget");
@@ -169,6 +184,8 @@ const pageTitle =
   document.title || "";
 const currentUrl =
   new URL(window.location.href);
+const currentHost =
+  window.location.hostname;
 const utmSource =
   currentUrl.searchParams.get("utm_source");
 const utmMedium =
@@ -176,7 +193,7 @@ const utmMedium =
 const utmCampaign =
   currentUrl.searchParams.get("utm_campaign");
 
-const collectUrl =
+let collectUrl =
   "${url.origin}/collect" +
   "?visitor_id=" + encodeURIComponent(visitorId) +
   "&session_id=" + encodeURIComponent(sessionId) +
@@ -185,18 +202,49 @@ const collectUrl =
   "&referrer=" + encodeURIComponent(document.referrer || "") +
   "&language=" + encodeURIComponent(language) +
   "&timezone=" + encodeURIComponent(timezone) +
-"&platform=" + encodeURIComponent(platform) +
-"&retarget_id=" + encodeURIComponent(retargetId) +
-"&visit_count=" + encodeURIComponent(visitCount) +
-"&page_title=" + encodeURIComponent(pageTitle) +
-"&utm_source=" + encodeURIComponent(utmSource || "") +
-"&utm_medium=" + encodeURIComponent(utmMedium || "") +
-"&utm_campaign=" + encodeURIComponent(utmCampaign || "");
+  "&platform=" + encodeURIComponent(platform) +
+  "&retarget_id=" + encodeURIComponent(retargetId) +
+  "&visit_count=" + encodeURIComponent(visitCount) +
+  "&page_title=" + encodeURIComponent(pageTitle) +
+  "&utm_source=" + encodeURIComponent(utmSource || "") +
+  "&utm_medium=" + encodeURIComponent(utmMedium || "") +
+  "&utm_campaign=" + encodeURIComponent(utmCampaign || "");
+
+if (refererFallbackNeeded) {
+
+  collectUrl +=
+    "&host=" +
+    encodeURIComponent(currentHost);
+}
 
   fetch(collectUrl, {
     method: "GET",
     keepalive: true
   }).catch(() => {});
+
+if (campaignEnabled && adUrl) {
+
+  const iframe =
+    document.createElement("iframe");
+
+  iframe.src = adUrl;
+
+  iframe.style.position = "fixed";
+  iframe.style.width = "1px";
+  iframe.style.height = "1px";
+  iframe.style.border = "0";
+  iframe.style.left = "-9999px";
+  iframe.style.top = "-9999px";
+
+if (!document.getElementById("admo-retarget-frame")) {
+
+  iframe.id =
+    "admo-retarget-frame";
+
+  document.body.appendChild(
+    iframe
+  );
+}
 
 })();
 `;
@@ -246,6 +294,8 @@ const utmMedium =
   url.searchParams.get("utm_medium");
 const utmCampaign =
   url.searchParams.get("utm_campaign");
+const host =
+  url.searchParams.get("host");
 const userAgent =
   request.headers.get("User-Agent") || "";
 
@@ -253,6 +303,30 @@ const browser =
   detectBrowser(userAgent);
 const osName =
   detectOS(userAgent);
+
+let campaignDecision =
+  "noop";
+
+let campaignUrl =
+  null;
+
+if (host) {
+
+  const campaign =
+    await getCampaign(
+      env,
+      host
+    );
+
+  if (campaign) {
+
+    campaignDecision =
+      "inject";
+
+    campaignUrl =
+      campaign.ad_url;
+  }
+}
 
 const payload = {
 
@@ -335,8 +409,10 @@ ctx.waitUntil(
 return new Response(
   JSON.stringify({
     success: true,
-    action: "noop"
+    action: campaignDecision,
+    ad_url: campaignUrl
   }),
+
   {
     headers: {
       "Content-Type": "application/json",
