@@ -1,5 +1,5 @@
 export default {
-  async fetch(request, env) {
+async fetch(request, env, ctx) {
 
     if (request.method === "OPTIONS") {
       return new Response(null, {
@@ -353,35 +353,38 @@ custom_metadata: {
     new Date().toISOString()
 };
 
-      const response = await fetch(
-        `${env.SUPABASE_URL}/events`,
-        {
-          method: "POST",
-          headers: {
-            apikey: env.SUPABASE_API_KEY,
-            Authorization:
-              `Bearer ${env.SUPABASE_API_KEY}`,
-            "Content-Type": "application/json",
-            Prefer: "return=minimal"
-          },
-          body: JSON.stringify(payload)
-        }
-      );
+ctx.waitUntil(
+  fetch(
+    `${env.SUPABASE_URL}/events`,
+    {
+      method: "POST",
+      headers: {
+        apikey: env.SUPABASE_API_KEY,
+        Authorization:
+          `Bearer ${env.SUPABASE_API_KEY}`,
+        "Content-Type": "application/json",
+        Prefer: "return=minimal"
+      },
+      body: JSON.stringify(payload)
+    }
+  )
+);
 
-      return new Response(
-        JSON.stringify({
-          success: response.ok,
-          status: response.status
-        }),
-        {
-          headers: {
-            "Content-Type": "application/json",
-            "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-            "Access-Control-Allow-Headers": "*"
-          }
-        }
-      );
+return new Response(
+  JSON.stringify({
+    success: true,
+    action: "noop"
+  }),
+  {
+    headers: {
+      "Content-Type": "application/json",
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+      "Access-Control-Allow-Headers": "*"
+    }
+  }
+);
+
     }
 
     return Response.json({
