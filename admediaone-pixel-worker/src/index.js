@@ -102,7 +102,7 @@ if (url.pathname === "/pixel.js") {
   var s = document.createElement("script");
 
   s.src =
-    "${url.origin}/runtime.js?v=1.0.0";
+	"${url.origin}/runtime.js?v=1.0.1";
 
   s.async = true;
 
@@ -130,6 +130,8 @@ if (url.pathname === "/version") {
   });
 
 }
+
+if (url.pathname === "/runtime.js") {
 
 const js = `
 (function(){
