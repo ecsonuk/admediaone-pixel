@@ -134,6 +134,7 @@ return campaigns.find(c => {
 
 }) || null;
 
+}
 
 if (url.pathname === "/pixel.js") {
 
