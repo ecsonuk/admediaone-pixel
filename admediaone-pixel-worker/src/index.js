@@ -73,7 +73,11 @@ function detectOS(ua) {
 
 async function getCampaign(env, hostname) {
 
-  const response = await fetch(
+let response;
+
+try {
+
+  response = await fetch(
     `${env.SUPABASE_URL}/campaigns?status=eq.true`,
     {
       headers: {
@@ -84,6 +88,12 @@ async function getCampaign(env, hostname) {
     }
   );
 
+} catch(e) {
+
+  return null;
+
+}
+
   if (!response.ok) {
     return null;
   }
@@ -92,47 +102,57 @@ async function getCampaign(env, hostname) {
 
 const now = new Date();
 
-return campaigns.find(c => {
+const matchedCampaigns =
+  campaigns.filter(c => {
 
-  if (
-    !c.audience_rules ||
-    c.audience_rules.domain !== hostname
-  ) {
-    return false;
-  }
+    if (
+      !c.audience_rules ||
+      c.audience_rules.domain !== hostname
+    ) {
+      return false;
+    }
 
-  /*
-   * Legacy campaigns
-   */
-  if (
-    !c.start_date &&
-    !c.end_date
-  ) {
-    return true;
-  }
+    if (
+      !c.start_date &&
+      !c.end_date
+    ) {
+      return true;
+    }
 
-  /*
-   * Invalid campaign
-   */
-  if (
-    !c.start_date ||
-    !c.end_date
-  ) {
-    return false;
-  }
+    if (
+      !c.start_date ||
+      !c.end_date
+    ) {
+      return false;
+    }
 
-  const start =
-    new Date(c.start_date);
+const start =
+  new Date(c.start_date);
 
-  const end =
-    new Date(c.end_date);
+const end =
+  new Date(c.end_date);
 
-  return (
-    now >= start &&
-    now <= end
-  );
+if (
+  isNaN(start.getTime()) ||
+  isNaN(end.getTime())
+) {
+  return false;
+}
 
-}) || null;
+    return (
+      now >= start &&
+      now <= end
+    );
+
+  });
+
+matchedCampaigns.sort(
+  (a, b) =>
+    (b.priority || 0) -
+    (a.priority || 0)
+);
+
+return matchedCampaigns[0] || null;
 
 }
 
@@ -480,13 +500,24 @@ let campaign = null;
 try {
 
   campaign =
-    await getCampaign(
-      env,
-      host
-    );
+    await Promise.race([
+      getCampaign(
+        env,
+        host
+      ),
+
+      new Promise(resolve =>
+        setTimeout(
+          () => resolve(null),
+          1500
+        )
+      )
+    ]);
 
 } catch(e) {
+
   campaign = null;
+
 }
 
 if (campaign) {
