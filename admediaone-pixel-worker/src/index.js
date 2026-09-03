@@ -11,7 +11,9 @@ async fetch(request, env, ctx) {
       });
     }
 
-    const url = new URL(request.url);
+
+	const RUNTIME_VERSION = "1.0.1";
+	const url = new URL(request.url);
 
 function detectBrowser(ua) {
 
@@ -88,11 +90,50 @@ async function getCampaign(env, hostname) {
 
   const campaigns = await response.json();
 
-  return campaigns.find(c =>
-    c.audience_rules &&
-    c.audience_rules.domain === hostname
-  ) || null;
-}
+const now = new Date();
+
+return campaigns.find(c => {
+
+  if (
+    !c.audience_rules ||
+    c.audience_rules.domain !== hostname
+  ) {
+    return false;
+  }
+
+  /*
+   * Legacy campaigns
+   */
+  if (
+    !c.start_date &&
+    !c.end_date
+  ) {
+    return true;
+  }
+
+  /*
+   * Invalid campaign
+   */
+  if (
+    !c.start_date ||
+    !c.end_date
+  ) {
+    return false;
+  }
+
+  const start =
+    new Date(c.start_date);
+
+  const end =
+    new Date(c.end_date);
+
+  return (
+    now >= start &&
+    now <= end
+  );
+
+}) || null;
+
 
 if (url.pathname === "/pixel.js") {
 
@@ -102,11 +143,13 @@ if (url.pathname === "/pixel.js") {
   var s = document.createElement("script");
 
   s.src =
-	"${url.origin}/runtime.js?v=1.0.1";
+	"${url.origin}/runtime.js?v=${RUNTIME_VERSION}";
 
   s.async = true;
 
+try {
   document.head.appendChild(s);
+} catch(e) {}
 
 })();
 `;
@@ -126,7 +169,7 @@ if (url.pathname === "/pixel.js") {
 if (url.pathname === "/version") {
 
   return Response.json({
-    runtime: "1.0.0"
+    runtime: RUNTIME_VERSION
   });
 
 }
@@ -135,6 +178,8 @@ if (url.pathname === "/runtime.js") {
 
 const js = `
 (function(){
+
+try {
 
 if(window.self !== window.top){
   return;
@@ -146,10 +191,12 @@ if(window.__ADMO_PIXEL_LOADED__){
 
 window.__ADMO_PIXEL_LOADED__ = true;
 
-let retargetId =
-  localStorage.getItem(
-    "admo_retarget"
-  );
+let retargetId = null;
+
+try {
+  retargetId =
+    localStorage.getItem("admo_retarget");
+} catch(e) {}
 
 if(!retargetId){
 
@@ -157,56 +204,93 @@ if(!retargetId){
     crypto.randomUUID()
       .replace(/-/g,'');
 
+try {
+
   localStorage.setItem(
     "admo_retarget",
     retargetId
   );
+
+} catch(e) {}
+
 }
 
-let visitCount =
-  parseInt(
-    localStorage.getItem(
-      "admo_visit_count"
-    ) || "0"
-  );
+let visitCount = 0;
+
+try {
+
+  visitCount =
+    parseInt(
+      localStorage.getItem(
+        "admo_visit_count"
+      ) || "0"
+    );
+
+} catch(e) {}
 
 visitCount++;
 
-localStorage.setItem(
-  "admo_visit_count",
-  visitCount
-);
+try {
 
-let visitorId =
-  localStorage.getItem(
-    "admo_visitor"
+  localStorage.setItem(
+    "admo_visit_count",
+    visitCount
   );
+
+} catch(e) {}
+
+let visitorId = null;
+
+try {
+
+  visitorId =
+    localStorage.getItem(
+      "admo_visitor"
+    );
+
+} catch(e) {}
 
 if(!visitorId){
 
   visitorId =
     crypto.randomUUID();
 
-  localStorage.setItem(
-    "admo_visitor",
-    visitorId
-  );
+  try {
+
+    localStorage.setItem(
+      "admo_visitor",
+      visitorId
+    );
+
+  } catch(e) {}
+
 }
 
-let sessionId =
-  sessionStorage.getItem(
-    "admo_session"
-  );
+let sessionId = null;
+
+try {
+
+  sessionId =
+    sessionStorage.getItem(
+      "admo_session"
+    );
+
+} catch(e) {}
 
 if(!sessionId){
 
   sessionId =
     crypto.randomUUID();
 
-  sessionStorage.setItem(
-    "admo_session",
-    sessionId
-  );
+  try {
+
+    sessionStorage.setItem(
+      "admo_session",
+      sessionId
+    );
+
+  } catch(e) {}
+
 }
 
 const screenResolution =
@@ -309,7 +393,16 @@ fetch(
 })
 .catch(() => {});
 
+}
+catch(e){
+  console.error(
+    "ADMO Runtime Error",
+    e
+  );
+}
+
 })();
+
 `;
 
 return new Response(js,{
@@ -376,22 +469,37 @@ let campaignDecision =
 let campaignUrl =
   null;
 
+let campaignReason =
+  "no_match";
+
 if (host) {
 
-  const campaign =
+let campaign = null;
+
+try {
+
+  campaign =
     await getCampaign(
       env,
       host
     );
 
-  if (campaign) {
+} catch(e) {
+  campaign = null;
+}
 
-    campaignDecision =
-      "inject";
+if (campaign) {
 
-    campaignUrl =
-      campaign.ad_url;
-  }
+  campaignDecision =
+    "inject";
+
+  campaignUrl =
+    campaign.ad_url;
+
+  campaignReason =
+    "campaign_active";
+}
+
 }
 
 const payload = {
@@ -473,11 +581,12 @@ ctx.waitUntil(
 );
 
 return new Response(
-  JSON.stringify({
-    success: true,
-    action: campaignDecision,
-    ad_url: campaignUrl
-  }),
+JSON.stringify({
+  success: true,
+  action: campaignDecision,
+  ad_url: campaignUrl,
+  reason: campaignReason
+}),
 
   {
     headers: {
