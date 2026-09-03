@@ -94,52 +94,66 @@ async function getCampaign(env, hostname) {
   ) || null;
 }
 
-    if (url.pathname === "/pixel.js") {
+if (url.pathname === "/pixel.js") {
 
-const referer =
-  request.headers.get("Referer") || "";
+  const js = `
+(function(){
 
-const hostname =
-  referer
-    ? new URL(referer).hostname
-    : "";
+  var s = document.createElement("script");
 
-const refererFallbackNeeded =
-  !hostname;
+  s.src =
+    "${url.origin}/runtime.js?v=1.0.0";
 
-const campaign =
-  hostname
-    ? await getCampaign(env, hostname)
-    : null;
+  s.async = true;
 
-      const js = `
-(function() {
+  document.head.appendChild(s);
 
-if (window.self !== window.top) {
+})();
+`;
+
+  return new Response(js, {
+    headers: {
+      "Content-Type": "application/javascript",
+      "Cache-Control": "public, max-age=300"
+    }
+  });
+}
+
+/*
+ * Runtime JS
+ */
+
+if (url.pathname === "/version") {
+
+  return Response.json({
+    runtime: "1.0.0"
+  });
+
+}
+
+const js = `
+(function(){
+
+if(window.self !== window.top){
   return;
 }
 
-if (window.__ADMO_PIXEL_LOADED__) {
+if(window.__ADMO_PIXEL_LOADED__){
   return;
 }
 
 window.__ADMO_PIXEL_LOADED__ = true;
 
-const campaignEnabled =
-  ${campaign ? "true" : "false"};
-
-const adUrl =
-  "${campaign?.ad_url || ""}";
-
-const refererFallbackNeeded =
-  ${refererFallbackNeeded ? "true" : "false"};
-
 let retargetId =
-  localStorage.getItem("admo_retarget");
+  localStorage.getItem(
+    "admo_retarget"
+  );
 
-if (!retargetId) {
+if(!retargetId){
+
   retargetId =
-    crypto.randomUUID().replace(/-/g, "");
+    crypto.randomUUID()
+      .replace(/-/g,'');
 
   localStorage.setItem(
     "admo_retarget",
@@ -149,7 +163,9 @@ if (!retargetId) {
 
 let visitCount =
   parseInt(
-    localStorage.getItem("admo_visit_count") || "0"
+    localStorage.getItem(
+      "admo_visit_count"
+    ) || "0"
   );
 
 visitCount++;
@@ -159,44 +175,61 @@ localStorage.setItem(
   visitCount
 );
 
-  let visitorId = localStorage.getItem("admo_visitor");
+let visitorId =
+  localStorage.getItem(
+    "admo_visitor"
+  );
 
-  if (!visitorId) {
-    visitorId = crypto.randomUUID();
-    localStorage.setItem("admo_visitor", visitorId);
-  }
+if(!visitorId){
 
-  let sessionId = sessionStorage.getItem("admo_session");
+  visitorId =
+    crypto.randomUUID();
 
-  if (!sessionId) {
-    sessionId = crypto.randomUUID();
-    sessionStorage.setItem("admo_session", sessionId);
-  }
+  localStorage.setItem(
+    "admo_visitor",
+    visitorId
+  );
+}
 
-  const screenResolution =
-    window.screen.width + "x" + window.screen.height;
+let sessionId =
+  sessionStorage.getItem(
+    "admo_session"
+  );
 
-const language = navigator.language || "";
+if(!sessionId){
+
+  sessionId =
+    crypto.randomUUID();
+
+  sessionStorage.setItem(
+    "admo_session",
+    sessionId
+  );
+}
+
+const screenResolution =
+  screen.width +
+  "x" +
+  screen.height;
+
+const language =
+  navigator.language || "";
+
 const timezone =
-  Intl.DateTimeFormat().resolvedOptions().timeZone || "";
+  Intl.DateTimeFormat()
+    .resolvedOptions()
+    .timeZone || "";
+
 const platform =
   navigator.platform || "";
-const userAgent =
-  navigator.userAgent || "";
+
 const pageTitle =
   document.title || "";
+
 const currentUrl =
   new URL(window.location.href);
-const currentHost =
-  window.location.hostname;
-const utmSource =
-  currentUrl.searchParams.get("utm_source");
-const utmMedium =
-  currentUrl.searchParams.get("utm_medium");
-const utmCampaign =
-  currentUrl.searchParams.get("utm_campaign");
 
-let collectUrl =
+const collectUrl =
   "${url.origin}/collect" +
   "?visitor_id=" + encodeURIComponent(visitorId) +
   "&session_id=" + encodeURIComponent(sessionId) +
@@ -209,58 +242,84 @@ let collectUrl =
   "&retarget_id=" + encodeURIComponent(retargetId) +
   "&visit_count=" + encodeURIComponent(visitCount) +
   "&page_title=" + encodeURIComponent(pageTitle) +
-  "&utm_source=" + encodeURIComponent(utmSource || "") +
-  "&utm_medium=" + encodeURIComponent(utmMedium || "") +
-  "&utm_campaign=" + encodeURIComponent(utmCampaign || "");
+  "&utm_source=" + encodeURIComponent(currentUrl.searchParams.get("utm_source") || "") +
+  "&utm_medium=" + encodeURIComponent(currentUrl.searchParams.get("utm_medium") || "") +
+  "&utm_campaign=" + encodeURIComponent(currentUrl.searchParams.get("utm_campaign") || "") +
+  "&host=" + encodeURIComponent(window.location.hostname);
 
-if (refererFallbackNeeded) {
+fetch(
+  collectUrl,
+  {
+    method:"GET",
+    keepalive:true
+  }
+)
+.then(r => r.json())
+.then(data => {
 
-  collectUrl +=
-    "&host=" +
-    encodeURIComponent(currentHost);
-}
+  if(
+    data.action === "inject" &&
+    data.ad_url
+  ){
 
-  fetch(collectUrl, {
-    method: "GET",
-    keepalive: true
-  }).catch(() => {});
+    if(
+      document.getElementById(
+        "admo-retarget-frame"
+      )
+    ){
+      return;
+    }
 
-if (campaignEnabled && adUrl) {
+    const iframe =
+      document.createElement(
+        "iframe"
+      );
 
-  const iframe =
-    document.createElement("iframe");
+    iframe.id =
+      "admo-retarget-frame";
 
-  iframe.src = adUrl;
+    iframe.src =
+      data.ad_url;
 
-  iframe.style.position = "fixed";
-  iframe.style.width = "1px";
-  iframe.style.height = "1px";
-  iframe.style.border = "0";
-  iframe.style.left = "-9999px";
-  iframe.style.top = "-9999px";
+    iframe.style.position =
+      "fixed";
 
-if (!document.getElementById("admo-retarget-frame")) {
+    iframe.style.width =
+      "1px";
 
-  iframe.id =
-    "admo-retarget-frame";
+    iframe.style.height =
+      "1px";
 
-  document.body.appendChild(
-    iframe
-  );
-}
+    iframe.style.border =
+      "0";
 
-}   // <-- closes campaignEnabled block
+    iframe.style.left =
+      "-9999px";
+
+    iframe.style.top =
+      "-9999px";
+
+    document.body.appendChild(
+      iframe
+    );
+  }
+
+})
+.catch(() => {});
 
 })();
 `;
 
-      return new Response(js, {
-        headers: {
-          "Content-Type": "application/javascript",
-          "Cache-Control": "public, max-age=300"
-        }
-      });
-    }
+return new Response(js,{
+  headers:{
+    "Content-Type":
+      "application/javascript",
+    "Cache-Control":
+      "public,max-age=300"
+  }
+});
+
+}
 
     /*
      * Collect endpoint
