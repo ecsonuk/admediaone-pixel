@@ -99,8 +99,15 @@ if (!editingId) {
       ad_url: form.ad_url,
       priority: Number(form.priority),
       status: form.status,
-      start_date: form.start_date,
-      end_date: form.end_date,
+start_date:
+  new Date(
+    form.start_date
+  ).toISOString(),
+
+end_date:
+  new Date(
+    form.end_date
+  ).toISOString(),
       audience_rules: {
         domain: form.domain
       }
@@ -131,6 +138,23 @@ if (!editingId) {
     loadCampaigns();
   };
 
+const utcToISTInput = (utcDate) => {
+
+  if (!utcDate) return "";
+
+  const d = new Date(utcDate);
+
+  const ist =
+    new Date(
+      d.getTime() +
+      (5.5 * 60 * 60 * 1000)
+    );
+
+  return ist
+    .toISOString()
+    .slice(0,16);
+};
+
   const editCampaign = (c) => {
 
     setEditingId(c.id);
@@ -141,12 +165,15 @@ if (!editingId) {
       ad_url: c.ad_url || "",
       priority: c.priority || 100,
       status: c.status,
-      start_date: c.start_date
-        ? c.start_date.substring(0,16)
-        : "",
-      end_date: c.end_date
-        ? c.end_date.substring(0,16)
-        : ""
+start_date:
+  utcToISTInput(
+    c.start_date
+  ),
+
+end_date:
+  utcToISTInput(
+    c.end_date
+  )
     });
   };
 
@@ -310,7 +337,7 @@ campaigns.length > 0
 
         <br/><br/>
 
-        <label>Start Date</label>
+        <label>Start Date (IST)</label>
 
         <br/>
 
@@ -327,7 +354,7 @@ campaigns.length > 0
 
         <br/><br/>
 
-        <label>End Date</label>
+        <label>End Date (IST)</label>
 
         <br/>
 
@@ -373,8 +400,8 @@ campaigns.length > 0
 <th>Priority</th>
 <th>Status</th>
 <th>Impressions</th>
-<th>Start</th>
-<th>End</th>
+<th>Start (IST)</th>
+<th>End (IST)</th>
 <th>Actions</th>
 </tr>
 </thead>
@@ -425,7 +452,12 @@ c.impressions || 0
 {
 new Date(
 c.start_date
-).toLocaleString()
+).toLocaleString(
+"en-IN",
+{
+timeZone: "Asia/Kolkata"
+}
+)
 }
 </td>
 
@@ -433,7 +465,12 @@ c.start_date
 {
 new Date(
 c.end_date
-).toLocaleString()
+).toLocaleString(
+"en-IN",
+{
+timeZone: "Asia/Kolkata"
+}
+)
 }
 </td>
 
