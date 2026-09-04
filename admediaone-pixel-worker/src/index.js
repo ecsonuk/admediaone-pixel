@@ -77,8 +77,8 @@ let response;
 
 try {
 
-  response = await fetch(
-    `${env.SUPABASE_URL}/campaigns?status=eq.true`,
+response = await fetch(
+  `${env.SUPABASE_URL}/campaigns?status=eq.true&select=id,ad_url,priority,start_date,end_date,audience_rules`,
     {
       headers: {
         apikey: env.SUPABASE_API_KEY,
@@ -105,8 +105,10 @@ const now = new Date();
 const matchedCampaigns =
   campaigns.filter(c => {
 
-    if (
-      !c.audience_rules ||
+if (!c.audience_rules) {
+  return false;
+}
+
 const campaignDomain =
   (c.audience_rules?.domain || "")
     .trim()
@@ -122,9 +124,6 @@ const requestDomain =
 if (campaignDomain !== requestDomain) {
   return false;
 }
-    ) {
-      return false;
-    }
 
     if (
       !c.start_date &&
