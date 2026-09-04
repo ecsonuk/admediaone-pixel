@@ -62,6 +62,18 @@ if (
     });
   };
 
+const istInputToUtc = (value) => {
+
+  if (!value) return null;
+
+  const date =
+    new Date(
+      value + ":00+05:30"
+    );
+
+  return date.toISOString();
+};
+
   const saveCampaign = async () => {
 
 if (!editingId) {
@@ -99,15 +111,15 @@ if (!editingId) {
       ad_url: form.ad_url,
       priority: Number(form.priority),
       status: form.status,
-start_date:
-  new Date(
+      start_date:
+  istInputToUtc(
     form.start_date
-  ).toISOString(),
+  ),
 
 end_date:
-  new Date(
+  istInputToUtc(
     form.end_date
-  ).toISOString(),
+  ),
       audience_rules: {
         domain: form.domain
       }
