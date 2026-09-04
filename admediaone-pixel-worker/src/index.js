@@ -107,7 +107,21 @@ const matchedCampaigns =
 
     if (
       !c.audience_rules ||
-      c.audience_rules.domain !== hostname
+const campaignDomain =
+  (c.audience_rules?.domain || "")
+    .trim()
+    .toLowerCase()
+    .replace(/^www\./,'');
+
+const requestDomain =
+  hostname
+    .trim()
+    .toLowerCase()
+    .replace(/^www\./,'');
+
+if (campaignDomain !== requestDomain) {
+  return false;
+}
     ) {
       return false;
     }
