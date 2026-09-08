@@ -12,7 +12,7 @@ async fetch(request, env, ctx) {
     }
 
 
-	const RUNTIME_VERSION = "1.0.1";
+	const RUNTIME_VERSION = "1.0.2";
 	const url = new URL(request.url);
 
 function detectBrowser(ua) {
@@ -71,7 +71,22 @@ function detectOS(ua) {
      * Pixel JS
      */
 
-async function getCampaign(env, hostname) {
+async function getCampaign(env, hostname, ctx) {
+
+const cacheKey =
+  new Request(
+    `https://campaign-cache/${hostname}`
+  );
+
+const cache =
+  caches.default;
+
+const cached =
+  await cache.match(cacheKey);
+
+if (cached) {
+  return await cached.json();
+}
 
 let response;
 
@@ -165,7 +180,27 @@ matchedCampaigns.sort(
     (a.priority || 0)
 );
 
-return matchedCampaigns[0] || null;
+const matchedCampaign =
+  matchedCampaigns[0] || null;
+
+ctx.waitUntil(
+  cache.put(
+    cacheKey,
+    new Response(
+      JSON.stringify(
+        matchedCampaign
+      ),
+      {
+        headers: {
+          "Cache-Control":
+            "max-age=30"
+        }
+      }
+    )
+  )
+);
+
+return matchedCampaign;
 
 }
 
@@ -516,7 +551,8 @@ try {
     await Promise.race([
       getCampaign(
         env,
-        host
+        host,
+        ctx
       ),
 
       new Promise(resolve =>
