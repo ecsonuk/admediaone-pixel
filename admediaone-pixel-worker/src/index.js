@@ -12,7 +12,7 @@ async fetch(request, env, ctx) {
     }
 
 
-	const RUNTIME_VERSION = "1.0.2";
+	const RUNTIME_VERSION = "1.0.3";
 	const url = new URL(request.url);
 
 function detectBrowser(ua) {
@@ -183,22 +183,22 @@ matchedCampaigns.sort(
 const matchedCampaign =
   matchedCampaigns[0] || null;
 
-ctx.waitUntil(
-  cache.put(
-    cacheKey,
-    new Response(
-      JSON.stringify(
-        matchedCampaign
-      ),
-      {
-        headers: {
-          "Cache-Control":
-            "max-age=30"
-        }
-      }
-    )
-  )
-);
+ ctx.waitUntil(
+   cache.put(
+     cacheKey,
+     new Response(
+       JSON.stringify(
+         matchedCampaign
+       ),
+       {
+         headers: {
+           "Cache-Control":
+             "public, max-age=60"
+         }
+       }
+     )
+   )
+ );
 
 return matchedCampaign;
 
@@ -226,7 +226,7 @@ try {
   return new Response(js, {
     headers: {
       "Content-Type": "application/javascript",
-      "Cache-Control": "public, max-age=300"
+      "Cache-Control": "public, max-age=86400"
     }
   });
 }
@@ -479,7 +479,7 @@ return new Response(js,{
     "Content-Type":
       "application/javascript",
     "Cache-Control":
-      "public,max-age=300"
+      "public,max-age=86400"
   }
 });
 
@@ -669,14 +669,16 @@ JSON.stringify({
   reason: campaignReason
 }),
 
-  {
-    headers: {
-      "Content-Type": "application/json",
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-      "Access-Control-Allow-Headers": "*"
+    {
+      headers: {
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+        "Access-Control-Allow-Headers": "*",
+        "Cache-Control": "no-store, no-cache, must-revalidate"
+      }
     }
-  }
+
 );
 
     }
