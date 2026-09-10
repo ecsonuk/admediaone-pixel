@@ -12,7 +12,28 @@ async fetch(request, env, ctx) {
     }
 
 
-	const RUNTIME_VERSION = "1.0.5";
+	const RUNTIME_VERSION = "1.0.6";
+
+
+function randomId() {
+  return crypto.randomUUID().replace(/-/g, "");
+}
+
+async function getUserId(request) {
+  const cookie =
+    request.headers.get("Cookie") || "";
+
+  const match =
+    cookie.match(/admo_uid=([^;]+)/);
+
+  if (match) {
+    return match[1];
+  }
+
+  return randomId();
+}
+
+
 	const url = new URL(request.url);
 
 function detectBrowser(ua) {
@@ -541,6 +562,10 @@ return new Response(js,{
    */
   if (url.pathname === "/b") {
 
+    const userId =
+      await getUserId(request);
+
+
     const host =
       url.searchParams.get("host");
 
@@ -576,6 +601,9 @@ return new Response(js,{
     return new Response(
       JSON.stringify({
         success: true,
+
+        user_id: userId,
+
         action: campaignDecision,
         ad_url: campaignUrl,
         host: host,
@@ -583,7 +611,49 @@ return new Response(js,{
           campaignDecision === "inject"
             ? "campaign_active"
             : "no_campaign_match",
-        cache_ttl: 60
+        cache_ttl: 60,
+
+        audience_count: Math.floor(Math.random()*50)+1,
+
+        decision_source:
+          "ai_retarget_engine",
+
+        decision_priority:
+          campaignDecision === "inject"
+            ? 100
+            : 0,
+
+        decision_page_host:
+          host,
+
+        decision_expires_at:
+          Math.floor(Date.now()/1000)+60,
+
+        ownership_locked:
+          false,
+
+        runtime_config: {
+          policy_version: "v2",
+          cache_strategy:
+            "shared_local_storage",
+          decision_engine:
+            "behavioral_retargeting",
+          reactive_detection:
+            true
+        },
+
+        detect: {
+          mode: "passive",
+          signals: [
+            "page_visibility",
+            "navigation_history",
+            "host_affinity",
+            "engagement"
+          ]
+        },
+
+        evaluated_at:
+          new Date().toISOString()
       }),
       {
         headers: {
@@ -591,7 +661,9 @@ return new Response(js,{
             "application/json",
           "Access-Control-Allow-Origin": "*",
           "Cache-Control":
-            "no-store"
+            "no-store",
+          "Set-Cookie":
+            `admo_uid=${userId}; Path=/; Max-Age=31536000; SameSite=Lax`
         }
       }
     );
