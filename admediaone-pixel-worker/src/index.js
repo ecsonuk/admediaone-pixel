@@ -12,7 +12,7 @@ async fetch(request, env, ctx) {
     }
 
 
-	const RUNTIME_VERSION = "1.0.4";
+	const RUNTIME_VERSION = "1.0.5";
 	const url = new URL(request.url);
 
 function detectBrowser(ua) {
@@ -480,7 +480,7 @@ document.addEventListener(
 
     const lastCheck =
       parseInt(
-        sessionStorage.getItem(
+        localStorage.getItem(
           "admo_last_b_check"
         ) || "0"
       );
@@ -492,7 +492,7 @@ document.addEventListener(
       return;
     }
 
-    sessionStorage.setItem(
+    localStorage.setItem(
       "admo_last_b_check",
       now
     );
@@ -575,8 +575,15 @@ return new Response(js,{
 
     return new Response(
       JSON.stringify({
+        success: true,
         action: campaignDecision,
-        ad_url: campaignUrl
+        ad_url: campaignUrl,
+        host: host,
+        reason:
+          campaignDecision === "inject"
+            ? "campaign_active"
+            : "no_campaign_match",
+        cache_ttl: 60
       }),
       {
         headers: {
