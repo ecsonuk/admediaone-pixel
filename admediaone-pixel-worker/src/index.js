@@ -519,10 +519,7 @@ document.addEventListener(
     );
 
     fetch(
-      "${url.origin}/b?host=" +
-      encodeURIComponent(
-        window.location.hostname
-      ),
+      "${url.origin}/b",
       {
         method:"GET",
         keepalive:true
@@ -566,8 +563,28 @@ return new Response(js,{
       await getUserId(request);
 
 
-    const host =
-      url.searchParams.get("host");
+    const referer =
+      request.headers.get("Referer") || "";
+
+    const origin =
+      request.headers.get("Origin") || "";
+
+    let host = null;
+
+    try {
+
+      if (referer) {
+
+        host =
+          new URL(referer).hostname;
+
+      } else if (origin) {
+
+        host =
+          new URL(origin).hostname;
+      }
+
+    } catch(e) {}
 
     let campaignDecision =
       "noop";
@@ -711,7 +728,8 @@ const utmMedium =
 const utmCampaign =
   url.searchParams.get("utm_campaign");
 const host =
-  url.searchParams.get("host");
+    url.searchParams.get("host");
+
 const userAgent =
   request.headers.get("User-Agent") || "";
 
