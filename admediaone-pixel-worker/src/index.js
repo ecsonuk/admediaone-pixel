@@ -12,7 +12,7 @@ async fetch(request, env, ctx) {
     }
 
 
-	const RUNTIME_VERSION = "1.0.6";
+	const RUNTIME_VERSION = "1.0.7";
 
 
 function randomId() {
@@ -613,7 +613,10 @@ return new Response(js,{
             : "no_campaign_match",
         cache_ttl: 60,
 
-        audience_count: Math.floor(Math.random()*50)+1,
+        audience_count:
+          campaignDecision === "inject"
+            ? 1
+            : 0,
 
         decision_source:
           "ai_retarget_engine",
