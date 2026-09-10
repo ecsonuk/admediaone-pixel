@@ -475,8 +475,33 @@ document.addEventListener(
       return;
     }
 
+    const now =
+      Date.now();
+
+    const lastCheck =
+      parseInt(
+        sessionStorage.getItem(
+          "admo_last_b_check"
+        ) || "0"
+      );
+
+    if(
+      now - lastCheck <
+      60000
+    ){
+      return;
+    }
+
+    sessionStorage.setItem(
+      "admo_last_b_check",
+      now
+    );
+
     fetch(
-      collectUrl,
+      "${url.origin}/b?host=" +
+      encodeURIComponent(
+        window.location.hostname
+      ),
       {
         method:"GET",
         keepalive:true
@@ -510,6 +535,61 @@ return new Response(js,{
 });
 
 }
+
+  /*
+   * Lightweight decision endpoint
+   */
+  if (url.pathname === "/b") {
+
+    const host =
+      url.searchParams.get("host");
+
+    let campaignDecision =
+      "noop";
+
+    let campaignUrl =
+      null;
+
+    if (host) {
+
+      try {
+
+        const campaign =
+          await getCampaign(
+            env,
+            host,
+            ctx
+          );
+
+        if (campaign) {
+
+          campaignDecision =
+            "inject";
+
+          campaignUrl =
+            campaign.ad_url;
+        }
+
+      } catch(e) {}
+    }
+
+    return new Response(
+      JSON.stringify({
+        action: campaignDecision,
+        ad_url: campaignUrl
+      }),
+      {
+        headers: {
+          "Content-Type":
+            "application/json",
+          "Access-Control-Allow-Origin": "*",
+          "Cache-Control":
+            "no-store"
+        }
+      }
+    );
+  }
+
 
     /*
      * Collect endpoint
