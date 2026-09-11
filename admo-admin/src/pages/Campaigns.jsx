@@ -29,7 +29,8 @@ if (
 
       engagement_profile: "balanced",
       engagement_threshold: 10,
-      dwell_seconds: 15
+      dwell_seconds: 15,
+      reactive_max_checks: 0
     });
 
   const loadCampaigns = async () => {
@@ -66,7 +67,8 @@ if (
 
         engagement_profile: "balanced",
         engagement_threshold: 10,
-        dwell_seconds: 15
+        dwell_seconds: 15,
+      reactive_max_checks: 0
       });
   };
 
@@ -483,6 +485,26 @@ campaigns.length > 0
             setForm({
               ...form,
               dwell_seconds:e.target.value
+            })
+          }
+        />
+
+        <br/><br/>
+
+        <label>
+          Reactive Max Checks
+        </label>
+
+        <br/>
+
+        <input
+          type="number"
+          value={form.reactive_max_checks || ""}
+          placeholder="0 = unlimited"
+          onChange={(e)=>
+            setForm({
+              ...form,
+              reactive_max_checks:e.target.value
             })
           }
         />
