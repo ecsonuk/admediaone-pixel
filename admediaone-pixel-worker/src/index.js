@@ -634,8 +634,29 @@ document.addEventListener(
     fetch(
       "${url.origin}/b",
       {
-        method:"GET",
-        keepalive:true
+        method:"POST",
+        keepalive:true,
+        headers:{
+          "Content-Type":"application/json"
+        },
+        body:JSON.stringify({
+          engagement_score:
+            engagementScore,
+
+          mouse_moves:
+            mouseMoveCount,
+
+          scroll_count:
+            scrollCount,
+
+          keydown_count:
+            keydownCount,
+
+          dwell_seconds:
+            Math.floor(
+              (Date.now() - pageStartTime) / 1000
+            )
+        })
       }
     )
     .then(r => r.json())
@@ -676,6 +697,43 @@ if (url.pathname === "/b") {
     const userId =
       await getUserId(request);
 
+    let engagementScoreMetric = 0;
+    let mouseMovesMetric = 0;
+    let scrollCountMetric = 0;
+    let keydownCountMetric = 0;
+    let dwellSecondsMetric = 0;
+
+    try {
+
+      const body =
+        await request.json();
+
+      engagementScoreMetric =
+        parseInt(
+          body.engagement_score || 0
+        );
+
+      mouseMovesMetric =
+        parseInt(
+          body.mouse_moves || 0
+        );
+
+      scrollCountMetric =
+        parseInt(
+          body.scroll_count || 0
+        );
+
+      keydownCountMetric =
+        parseInt(
+          body.keydown_count || 0
+        );
+
+      dwellSecondsMetric =
+        parseInt(
+          body.dwell_seconds || 0
+        );
+
+    } catch(e) {}
 
     const referer =
       request.headers.get("Referer") || "";
@@ -719,11 +777,37 @@ if (url.pathname === "/b") {
 
         if (campaign) {
 
-          campaignDecision =
-            "inject";
+          const threshold =
+            campaign.audience_rules
+              ?.engagement
+              ?.threshold || 10;
 
-          campaignUrl =
-            campaign.ad_url;
+          const dwellRequired =
+            campaign.audience_rules
+              ?.engagement
+              ?.dwell_seconds || 15;
+
+          const qualifies =
+            engagementScoreMetric >= threshold
+            &&
+            dwellSecondsMetric >= dwellRequired;
+
+          if (qualifies) {
+
+            campaignDecision =
+              "inject";
+
+            campaignUrl =
+              campaign.ad_url;
+
+          } else {
+
+            campaignDecision =
+              "noop";
+
+            campaignUrl =
+              null;
+          }
         }
 
       } catch(e) {}
