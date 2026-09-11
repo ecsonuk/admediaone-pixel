@@ -449,6 +449,8 @@ function executeDecision(data){
     iframe.src =
       data.ad_url;
 
+    window.__ADMO_IFRAME_LOADED__ = true;
+
     iframe.style.position =
       "fixed";
 
@@ -475,6 +477,8 @@ function executeDecision(data){
 }
 
 window.__ADMO_EXECUTED__ = false;
+
+window.__ADMO_IFRAME_LOADED__ = false;
 
 let reactiveCheckCount = 0;
 
@@ -635,7 +639,10 @@ document.addEventListener(
             ),
 
           reactive_check_count:
-            reactiveCheckCount
+            reactiveCheckCount,
+
+          iframe_loaded:
+            window.__ADMO_IFRAME_LOADED__
         })
       }
     )
@@ -684,6 +691,8 @@ if (url.pathname === "/b") {
     let dwellSecondsMetric = 0;
     let reactiveCheckCountMetric = 0;
 
+    let iframeLoadedMetric = false;
+
     try {
 
       const body =
@@ -718,6 +727,9 @@ if (url.pathname === "/b") {
         parseInt(
           body.reactive_check_count || 0
         );
+
+      iframeLoadedMetric =
+        body.iframe_loaded === true;
 
     } catch(e) {}
 
@@ -802,6 +814,18 @@ if (url.pathname === "/b") {
 
             campaignReason =
               "reactive_limit_reached";
+
+          }
+          else if (iframeLoadedMetric) {
+
+            campaignDecision =
+              "noop";
+
+            campaignUrl =
+              null;
+
+            campaignReason =
+              "already_injected";
 
           }
           else if (qualifies) {
