@@ -12,7 +12,7 @@ async fetch(request, env, ctx) {
     }
 
 
-	const RUNTIME_VERSION = "1.0.8";
+	const RUNTIME_VERSION = "1.0.9";
 
 
 function randomId() {
