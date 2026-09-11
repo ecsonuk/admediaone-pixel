@@ -25,8 +25,12 @@ if (
     priority: 100,
     status: true,
     start_date: "",
-    end_date: ""
-  });
+    end_date: "",
+
+      engagement_profile: "balanced",
+      engagement_threshold: 10,
+      dwell_seconds: 15
+    });
 
   const loadCampaigns = async () => {
 
@@ -58,8 +62,12 @@ if (
       priority: 100,
       status: true,
       start_date: "",
-      end_date: ""
-    });
+      end_date: "",
+
+        engagement_profile: "balanced",
+        engagement_threshold: 10,
+        dwell_seconds: 15
+      });
   };
 
 const istInputToUtc = (value) => {
@@ -121,9 +129,23 @@ end_date:
     form.end_date
   ),
       audience_rules: {
-        domain: form.domain
-      }
-    };
+          domain: form.domain,
+
+          engagement_profile:
+            form.engagement_profile,
+
+          engagement: {
+            threshold:
+              Number(
+                form.engagement_threshold
+              ),
+
+            dwell_seconds:
+              Number(
+                form.dwell_seconds
+              )
+          }
+        }};
 
     let result;
 
@@ -181,12 +203,28 @@ start_date:
   utcToISTInput(
     c.start_date
   ),
+  end_date:
+    utcToISTInput(
+      c.end_date
+    ),
 
-end_date:
-  utcToISTInput(
-    c.end_date
-  )
-    });
+  engagement_profile:
+    c.audience_rules
+      ?.engagement_profile ||
+    "balanced",
+
+  engagement_threshold:
+    c.audience_rules
+      ?.engagement
+      ?.threshold || 10,
+
+  dwell_seconds:
+    c.audience_rules
+      ?.engagement
+      ?.dwell_seconds || 15
+
+      });
+
   };
 
 const deleteCampaign =
@@ -377,6 +415,74 @@ campaigns.length > 0
             setForm({
               ...form,
               end_date:e.target.value
+            })
+          }
+        />
+
+        <br/><br/>
+
+        <label>
+          Engagement Profile
+        </label>
+
+        <br/>
+
+        <select
+          value={form.engagement_profile}
+          onChange={(e)=>
+            setForm({
+              ...form,
+              engagement_profile:e.target.value
+            })
+          }
+        >
+          <option value="light">
+            Light
+          </option>
+
+          <option value="balanced">
+            Balanced
+          </option>
+
+          <option value="aggressive">
+            Aggressive
+          </option>
+        </select>
+
+        <br/><br/>
+
+        <label>
+          Engagement Threshold
+        </label>
+
+        <br/>
+
+        <input
+          type="number"
+          value={form.engagement_threshold}
+          onChange={(e)=>
+            setForm({
+              ...form,
+              engagement_threshold:e.target.value
+            })
+          }
+        />
+
+        <br/><br/>
+
+        <label>
+          Dwell Seconds
+        </label>
+
+        <br/>
+
+        <input
+          type="number"
+          value={form.dwell_seconds}
+          onChange={(e)=>
+            setForm({
+              ...form,
+              dwell_seconds:e.target.value
             })
           }
         />
