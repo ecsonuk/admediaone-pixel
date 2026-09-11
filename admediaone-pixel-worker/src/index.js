@@ -474,6 +474,47 @@ function executeDecision(data){
 
 }
 
+window.__ADMO_DECISION__ = null;
+
+window.__ADMO_EXECUTED__ = false;
+
+let engagementScore = 0;
+let pageStartTime = Date.now();
+
+let mouseMoveCount = 0;
+let scrollCount = 0;
+let keydownCount = 0;
+
+function addEngagement(points){
+  engagementScore += points;
+}
+
+document.addEventListener(
+  "mousemove",
+  () => {
+    mouseMoveCount++;
+    addEngagement(1);
+  },
+  { passive:true }
+);
+
+document.addEventListener(
+  "scroll",
+  () => {
+    scrollCount++;
+    addEngagement(2);
+  },
+  { passive:true }
+);
+
+document.addEventListener(
+  "keydown",
+  () => {
+    keydownCount++;
+    addEngagement(3);
+  }
+);
+
 fetch(
   collectUrl,
   {
@@ -482,8 +523,80 @@ fetch(
   }
 )
 .then(r => r.json())
-.then(executeDecision)
+.then(function(data){
+
+  window.__ADMO_DECISION__ = data;
+
+})
 .catch(() => {});
+
+setInterval(function(){
+
+  if(window.__ADMO_EXECUTED__){
+    return;
+  }
+
+  if(!window.__ADMO_DECISION__){
+    return;
+  }
+
+  const cfg =
+    window.__ADMO_DECISION__.engagement_profile ||
+    {};
+
+  const requiredScore =
+    cfg.minimum_score || 5;
+
+  const requiredDwell =
+    cfg.dwell_seconds || 15;
+
+  const dwellTime =
+    Math.floor(
+      (Date.now() - pageStartTime) / 1000
+    );
+
+  if(
+    engagementScore < requiredScore
+  ){
+    return;
+  }
+
+  if(
+    dwellTime < requiredDwell
+  ){
+    return;
+  }
+
+  const engagementUrl =
+    collectUrl +
+    "&event=engagement" +
+    "&engagement_score=" +
+    encodeURIComponent(engagementScore) +
+    "&mouse_moves=" +
+    encodeURIComponent(mouseMoveCount) +
+    "&scroll_count=" +
+    encodeURIComponent(scrollCount) +
+    "&keydown_count=" +
+    encodeURIComponent(keydownCount) +
+    "&dwell_seconds=" +
+    encodeURIComponent(dwellTime);
+
+  fetch(
+    engagementUrl,
+    {
+      method:"GET",
+      keepalive:true
+    }
+  )
+  .catch(() => {});
+
+  window.__ADMO_EXECUTED__ = true;
+
+  executeDecision(
+    window.__ADMO_DECISION__
+  );
+
+},1000);
 
 document.addEventListener(
   "visibilitychange",
@@ -557,7 +670,8 @@ return new Response(js,{
   /*
    * Lightweight decision endpoint
    */
-  if (url.pathname === "/b") {
+
+if (url.pathname === "/b") {
 
     const userId =
       await getUserId(request);
@@ -730,6 +844,35 @@ const utmCampaign =
 const host =
     url.searchParams.get("host");
 
+const eventType =
+  url.searchParams.get("event") ||
+  "bootstrap";
+
+const engagementScoreMetric =
+  parseInt(
+    url.searchParams.get("engagement_score") || "0"
+  );
+
+const mouseMovesMetric =
+  parseInt(
+    url.searchParams.get("mouse_moves") || "0"
+  );
+
+const scrollCountMetric =
+  parseInt(
+    url.searchParams.get("scroll_count") || "0"
+  );
+
+const keydownCountMetric =
+  parseInt(
+    url.searchParams.get("keydown_count") || "0"
+  );
+
+const dwellSecondsMetric =
+  parseInt(
+    url.searchParams.get("dwell_seconds") || "0"
+  );
+
 const userAgent =
   request.headers.get("User-Agent") || "";
 
@@ -791,7 +934,7 @@ if (campaign) {
 
 const payload = {
 
-  event: "bootstrap",
+  event: eventType,
   visitor_id: visitorId,
   session_id: sessionId,
   custom_id: "default",
@@ -824,7 +967,22 @@ custom_metadata: {
   retarget_id: retargetId,
   visit_count: visitCount,
   screen_resolution: screenResolution,
-  page_title: pageTitle
+  page_title: pageTitle,
+
+  engagement_score:
+    engagementScoreMetric,
+
+  mouse_moves:
+    mouseMovesMetric,
+
+  scroll_count:
+    scrollCountMetric,
+
+  keydown_count:
+    keydownCountMetric,
+
+  dwell_seconds:
+    dwellSecondsMetric
 },
 
   device_info: {
@@ -872,7 +1030,18 @@ JSON.stringify({
   success: true,
   action: campaignDecision,
   ad_url: campaignUrl,
-  reason: campaignReason
+  reason: campaignReason,
+
+  engagement_profile:
+    campaign?.audience_rules?.engagement_profile ||
+    "balanced",
+
+  engagement:
+    campaign?.audience_rules?.engagement || {
+      threshold: 10,
+      dwell_seconds: 15
+    }
+
 }),
 
     {
