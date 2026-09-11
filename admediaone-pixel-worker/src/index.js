@@ -920,14 +920,43 @@ try {
 
 if (campaign) {
 
-  campaignDecision =
-    "inject";
+  const threshold =
+    campaign.audience_rules
+      ?.engagement
+      ?.threshold || 10;
 
-  campaignUrl =
-    campaign.ad_url;
+  const dwellRequired =
+    campaign.audience_rules
+      ?.engagement
+      ?.dwell_seconds || 15;
 
-  campaignReason =
-    "campaign_active";
+  const qualifies =
+    engagementScoreMetric >= threshold
+    &&
+    dwellSecondsMetric >= dwellRequired;
+
+  if (qualifies) {
+
+    campaignDecision =
+      "inject";
+
+    campaignUrl =
+      campaign.ad_url;
+
+    campaignReason =
+      "engagement_matched";
+
+  } else {
+
+    campaignDecision =
+      "noop";
+
+    campaignUrl =
+      null;
+
+    campaignReason =
+      "engagement_not_met";
+  }
 }
 
 }
