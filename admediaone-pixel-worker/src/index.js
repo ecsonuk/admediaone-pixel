@@ -890,9 +890,9 @@ let campaignUrl =
 let campaignReason =
   "no_match";
 
-if (host) {
-
 let campaign = null;
+
+if (host) {
 
 try {
 
