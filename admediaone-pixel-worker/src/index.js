@@ -478,6 +478,8 @@ window.__ADMO_DECISION__ = null;
 
 window.__ADMO_EXECUTED__ = false;
 
+let reactiveCheckCount = 0;
+
 let engagementScore = 0;
 let pageStartTime = Date.now();
 
@@ -590,11 +592,43 @@ setInterval(function(){
   )
   .catch(() => {});
 
-  window.__ADMO_EXECUTED__ = true;
+  fetch(
+    "${url.origin}/b",
+    {
+      method:"POST",
+      keepalive:true,
+      headers:{
+        "Content-Type":"application/json"
+      },
+      body:JSON.stringify({
+        engagement_score:
+          engagementScore,
 
-  executeDecision(
-    window.__ADMO_DECISION__
-  );
+        mouse_moves:
+          mouseMoveCount,
+
+        scroll_count:
+          scrollCount,
+
+        keydown_count:
+          keydownCount,
+
+        dwell_seconds:
+          dwellTime,
+
+        reactive_check_count:0
+      })
+    }
+  )
+  .then(r => r.json())
+  .then(function(data){
+
+    window.__ADMO_EXECUTED__ = true;
+
+    executeDecision(data);
+
+  })
+  .catch(() => {});
 
 },1000);
 
@@ -621,7 +655,7 @@ document.addEventListener(
 
     if(
       now - lastCheck <
-      60000
+      30000
     ){
       return;
     }
@@ -630,6 +664,8 @@ document.addEventListener(
       "admo_last_b_check",
       now
     );
+
+    reactiveCheckCount++;
 
     fetch(
       "${url.origin}/b",
@@ -655,7 +691,10 @@ document.addEventListener(
           dwell_seconds:
             Math.floor(
               (Date.now() - pageStartTime) / 1000
-            )
+            ),
+
+          reactive_check_count:
+            reactiveCheckCount
         })
       }
     )
@@ -702,6 +741,7 @@ if (url.pathname === "/b") {
     let scrollCountMetric = 0;
     let keydownCountMetric = 0;
     let dwellSecondsMetric = 0;
+    let reactiveCheckCountMetric = 0;
 
     try {
 
@@ -731,6 +771,11 @@ if (url.pathname === "/b") {
       dwellSecondsMetric =
         parseInt(
           body.dwell_seconds || 0
+        );
+
+      reactiveCheckCountMetric =
+        parseInt(
+          body.reactive_check_count || 0
         );
 
     } catch(e) {}
@@ -792,7 +837,33 @@ if (url.pathname === "/b") {
             &&
             dwellSecondsMetric >= dwellRequired;
 
-          if (qualifies) {
+          const maxReactiveChecks =
+            campaign.audience_rules
+              ?.reactive_max_checks;
+
+          const limitReached =
+            maxReactiveChecks !== null
+            &&
+            maxReactiveChecks !== undefined
+            &&
+            maxReactiveChecks > 0
+            &&
+            reactiveCheckCountMetric >=
+              maxReactiveChecks;
+
+          if (limitReached) {
+
+            campaignDecision =
+              "noop";
+
+            campaignUrl =
+              null;
+
+            campaignReason =
+              "reactive_limit_reached";
+
+          }
+          else if (qualifies) {
 
             campaignDecision =
               "inject";
