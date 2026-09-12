@@ -230,7 +230,13 @@ start_date:
   dwell_seconds:
     c.audience_rules
       ?.engagement
-      ?.dwell_seconds || 15
+      ?.dwell_seconds || 15,
+
+  reactive_max_checks:
+    c.audience_rules
+      ?.reactive_max_checks ||
+    0,
+
 
       });
 
