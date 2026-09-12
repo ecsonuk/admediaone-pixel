@@ -146,7 +146,14 @@ end_date:
               Number(
                 form.dwell_seconds
               )
-          }
+          },
+
+          reactive_max_checks:
+            form.reactive_max_checks
+              ? Number(
+                  form.reactive_max_checks
+                )
+              : null
         }};
 
     let result;
